@@ -1,6 +1,7 @@
 package com.vismutFO.RESTservice;
 
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,22 +17,22 @@ public class PersonController {
     }
 
     @PostMapping("/persons")
-    public Person create(@Valid @RequestBody Person person) {
-        return collection.save(person);
+    public ResponseEntity<Person> createPerson(@Valid @RequestBody Person person) {
+        return ResponseEntity.status(201).body(collection.save(person));
     }
 
     @GetMapping("/persons")
-    public List<Person> getAll() {
-        return collection.findAll();
+    public ResponseEntity<List<Person>> getAll() {
+        return ResponseEntity.ok().body(collection.findAll());
     }
 
     @GetMapping("/persons/{id}")
-    public String getById(@Valid @PathVariable("id") UUID id) {
-        return (collection.findById(id).orElseThrow(() -> new PersonNotFoundException(id))).toStringFull();
+    public ResponseEntity<String> getPerson(@Valid @PathVariable("id") UUID id) {
+        return ResponseEntity.ok().body((collection.findById(id).orElseThrow(() -> new PersonNotFoundException(id))).toStringFull());
     }
 
-    @PostMapping("/persons/{id}")
-    public String set(@Valid @PathVariable("id") UUID id, @Valid @RequestBody Person newPerson) {
+    @PutMapping("/persons/{id}")
+    public String updatePerson(@Valid @PathVariable("id") UUID id, @Valid @RequestBody Person newPerson) {
         return (collection.findById(id)
                 .map(person -> {
                     person.setName(newPerson.getName());
