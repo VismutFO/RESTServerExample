@@ -1,11 +1,12 @@
 package com.vismutFO.RESTservice;
 
+
+import jakarta.persistence.Id;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.data.annotation.Id;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -91,7 +92,11 @@ public class Person {
 
     @Override
     public String toString() {
-        return "{\"name\": \"" + name + "\", \"login\" : \"" + login + "\"," +
-                " \"password\": \"" + password + "\", \"url\": \"" + url + "\",}";
+        return "{\"id\": \"" + id + "\", \"name\" : \"" + name + "\"}";
+    }
+
+    public String toStringFull() {
+        return "{\"id\": \"" +id + "\", \"name\": \"" + name + "\", \"login\" : \"" + login + "\"," +
+                " \"password\": \"" + password + "\", \"url\": \"" + url + "\"}";
     }
 }

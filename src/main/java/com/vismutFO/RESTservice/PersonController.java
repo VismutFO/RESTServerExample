@@ -15,10 +15,9 @@ public class PersonController {
         this.collection = collection;
     }
 
-    @PostMapping("/persons/{id}")
-    public Person create(@Valid @RequestParam(value = "name") String name, @Valid @RequestParam(value = "login") String login,
-                         @Valid @RequestParam(value = "password") String password, @Valid @RequestParam(value = "url") String url) {
-        return collection.save(new Person(name, login, password, url));
+    @PostMapping("/persons")
+    public Person create(@Valid @RequestBody Person person) {
+        return collection.save(person);
     }
 
     @GetMapping("/persons")
@@ -27,20 +26,20 @@ public class PersonController {
     }
 
     @GetMapping("/persons/{id}")
-    public Person getById(@PathVariable("id") UUID id) {
-        return collection.findById(id).orElseThrow(() -> new PersonNotFoundException(id));
+    public String getById(@Valid @PathVariable("id") UUID id) {
+        return (collection.findById(id).orElseThrow(() -> new PersonNotFoundException(id))).toStringFull();
     }
 
-    @PutMapping("/persons/{id}")
-    public Person set(@PathVariable("id") UUID id,
-                      @RequestParam(value = "name") String name, @RequestParam(value = "login") String login,
-                         @RequestParam(value = "password") String password, @RequestParam(value = "url") String url) {
-        Person person = collection.findById(id).orElseThrow(() -> new PersonNotFoundException(id));
-        collection.delete(person);
-        person.setName(name);
-        person.setLogin(login);
-        person.setPassword(password);
-        person.setUrl(url);
-        return collection.save(person);
+    @PostMapping("/persons/{id}")
+    public String set(@Valid @PathVariable("id") UUID id, @Valid @RequestBody Person newPerson) {
+        return (collection.findById(id)
+                .map(person -> {
+                    person.setName(newPerson.getName());
+                    person.setLogin(newPerson.getLogin());
+                    person.setPassword(newPerson.getPassword());
+                    person.setUrl(newPerson.getUrl());
+                    return collection.save(person);
+                })
+                .orElseThrow(() -> new PersonNotFoundException(id))).toStringFull();
     }
 }
