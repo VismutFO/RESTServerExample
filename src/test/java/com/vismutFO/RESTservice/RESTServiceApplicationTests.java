@@ -2,6 +2,7 @@ package com.vismutFO.RESTservice;
 
 import org.aspectj.lang.annotation.After;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -9,12 +10,15 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Objects;
+import static org.hamcrest.CoreMatchers.*;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RESTServiceApplicationTests {
 
@@ -22,7 +26,7 @@ class RESTServiceApplicationTests {
 	private TestRestTemplate restTemplate;
 
 	@Autowired
-	private PersonCollection collection;
+	private PersonRepository collection;
 
 	@After("")
 	public void resetCollection() {
@@ -32,13 +36,13 @@ class RESTServiceApplicationTests {
 	@Test
 	public void whenCreatePerson_thenStatus201() {
 
-		Person person = new Person("person1", "login1", "654321", "/");
+		Person person = new Person("Michail", "login", "password", "/");
 
 		ResponseEntity<Person> response = restTemplate.postForEntity("/persons", person, Person.class);
 
-		assertEquals(response.getStatusCode(), HttpStatus.CREATED);
-		assertNotNull(Objects.requireNonNull(response.getBody()).getId());
-		assertEquals(response.getBody().getName(), "Michail");
+		assertThat(response.getStatusCode(), is(HttpStatus.CREATED));
+		assertThat(response.getBody().getId(), notNullValue());
+		assertThat(response.getBody().getName(), is("Michail"));
 	}
 
 	@Test
@@ -47,7 +51,7 @@ class RESTServiceApplicationTests {
 		UUID id = createTestPerson("Joe").getId();
 
 		Person person = restTemplate.getForObject("/persons/{id}", Person.class, id);
-		assertEquals(person.getName(), "Joe");
+		assertThat(person.getName(), is("Joe"));
 	}
 
 	@Test
@@ -57,10 +61,11 @@ class RESTServiceApplicationTests {
 		Person person = new Person("Michail", "login", "password", "/");
 		HttpEntity<Person> entity = new HttpEntity<Person>(person);
 
-		ResponseEntity<Person> response = restTemplate.exchange("/persons/{id}", HttpMethod.PUT, entity, Person.class, id);
-		assertEquals(response.getStatusCode(), HttpStatus.OK);
-		assertNotNull(Objects.requireNonNull(response.getBody()).getId());
-		assertEquals(response.getBody().getName(), "Michail");
+		ResponseEntity<Person> response = restTemplate.exchange("/persons/{id}", HttpMethod.PUT, entity, Person.class,
+				id);
+		assertThat(response.getStatusCode(), is(HttpStatus.OK));
+		assertThat(response.getBody().getId(), notNullValue());
+		assertThat(response.getBody().getName(), is("Michail"));
 	}
 
 	private Person createTestPerson(String name) {

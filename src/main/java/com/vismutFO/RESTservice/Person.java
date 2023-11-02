@@ -1,11 +1,11 @@
 package com.vismutFO.RESTservice;
 
 
-import jakarta.persistence.Id;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.validation.constraints.NotBlank;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.validation.constraints.NotNull;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -13,15 +13,15 @@ import java.util.UUID;
 @Entity
 public class Person {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
-    @NotBlank(message = "Name is mandatory")
+    @NotNull(message = "Name is mandatory")
     private String name;
-    @NotBlank(message = "Login is mandatory")
+    @NotNull(message = "Login is mandatory")
     private String login;
-    @NotBlank(message = "Password is mandatory")
+    @NotNull(message = "Password is mandatory")
     private String password;
-    @NotBlank(message = "Url is mandatory")
+    @NotNull(message = "Url is mandatory")
     private String url;
 
     Person (String name, String login, String password, String url) {

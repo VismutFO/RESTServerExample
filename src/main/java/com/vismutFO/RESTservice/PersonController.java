@@ -1,45 +1,50 @@
 package com.vismutFO.RESTservice;
 
-import jakarta.validation.Valid;
+import javax.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import java.util.List;
 import java.util.UUID;
 
+@RequestMapping("/persons")
 @RestController
 public class PersonController {
 
-    private final PersonCollection collection;
+    @Autowired
+    private PersonRepository repository;
 
-    public PersonController(PersonCollection collection) {
-        this.collection = collection;
-    }
-
-    @PostMapping("/persons")
+    @PostMapping
     public ResponseEntity<Person> createPerson(@Valid @RequestBody Person person) {
-        return ResponseEntity.status(201).body(collection.save(person));
+        return ResponseEntity.status(201).body(repository.save(person));
     }
 
-    @GetMapping("/persons")
+    @GetMapping
     public ResponseEntity<List<Person>> getAll() {
-        return ResponseEntity.ok().body(collection.findAll());
+        return ResponseEntity.ok().body(repository.findAll());
     }
 
-    @GetMapping("/persons/{id}")
+    @GetMapping(value = "/{id}")
     public ResponseEntity<String> getPerson(@Valid @PathVariable("id") UUID id) {
-        return ResponseEntity.ok().body((collection.findById(id).orElseThrow(() -> new PersonNotFoundException(id))).toStringFull());
+        return ResponseEntity.ok().body((repository.findById(id).orElseThrow(() -> new PersonNotFoundException(id))).toStringFull());
     }
 
-    @PutMapping("/persons/{id}")
+    @PutMapping(value = "/{id}")
     public String updatePerson(@Valid @PathVariable("id") UUID id, @Valid @RequestBody Person newPerson) {
-        return (collection.findById(id)
+        return (repository.findById(id)
                 .map(person -> {
                     person.setName(newPerson.getName());
                     person.setLogin(newPerson.getLogin());
                     person.setPassword(newPerson.getPassword());
                     person.setUrl(newPerson.getUrl());
-                    return collection.save(person);
+                    return repository.save(person);
                 })
                 .orElseThrow(() -> new PersonNotFoundException(id))).toStringFull();
     }
