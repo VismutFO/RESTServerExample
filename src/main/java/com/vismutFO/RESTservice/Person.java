@@ -1,11 +1,12 @@
 package com.vismutFO.RESTservice;
 
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.validation.constraints.NotNull;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -24,7 +25,9 @@ public class Person {
     @NotNull(message = "Url is mandatory")
     private String url;
 
-    Person (String name, String login, String password, String url) {
+    public Person() {}
+
+    public Person (String name, String login, String password, String url) {
         this.name = name;
         this.login = login;
         this.password = password;
