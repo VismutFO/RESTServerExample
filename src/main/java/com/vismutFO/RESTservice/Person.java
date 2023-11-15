@@ -18,11 +18,9 @@ public class Person {
     private UUID id;
     @NotNull(message = "Name is mandatory")
     private String name;
-    @NotNull(message = "Login is mandatory")
     private String login;
     @NotNull(message = "Password is mandatory")
     private String password;
-    @NotNull(message = "Url is mandatory")
     private String url;
 
     public Person() {}

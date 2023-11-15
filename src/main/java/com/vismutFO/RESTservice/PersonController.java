@@ -2,6 +2,7 @@ package com.vismutFO.RESTservice;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,7 +24,7 @@ public class PersonController {
 
     @PostMapping
     public ResponseEntity<Person> createPerson(@Valid @RequestBody Person person) {
-        return ResponseEntity.status(201).body(repository.save(person));
+        return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(person));
     }
 
     @GetMapping
