@@ -1,5 +1,6 @@
 package com.vismutFO.RESTservice.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,7 @@ import com.vismutFO.RESTservice.services.JwtService;
 
 
 @Service
+@RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
     private final PersonRepository personRepository;
     private final PasswordEncoder passwordEncoder;
@@ -23,7 +25,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public JwtAuthenticationResponse signUp(SignUpRequest request) {
-        Person person = new Person(request);
+        Person person = Person.builder().name(request.getName()).login(request.getLogin())
+                .url(request.getUrl()).password(passwordEncoder.encode(request.getPassword())).build();
         personRepository.save(person);
         String jwt = jwtService.generateToken(person);
         return new JwtAuthenticationResponse(jwt);
@@ -32,8 +35,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public JwtAuthenticationResponse signIn(SignInRequest request) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        Person person = personRepository.findById(request.getId())
+                new UsernamePasswordAuthenticationToken(request.getName(), request.getPassword()));
+        Person person = personRepository.findByName(request.getName())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
         String jwt = jwtService.generateToken(person);
         return new JwtAuthenticationResponse(jwt);
