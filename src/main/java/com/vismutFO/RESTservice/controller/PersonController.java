@@ -1,41 +1,24 @@
-package com.vismutFO.RESTservice;
+package com.vismutFO.RESTservice.controller;
 
+import com.vismutFO.RESTservice.Person;
+import com.vismutFO.RESTservice.PersonNotFoundException;
+import com.vismutFO.RESTservice.PersonRepository;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 
-import java.util.List;
 import java.util.UUID;
 
-@RequestMapping("/persons")
+@RequestMapping("/api/v1/persons")
 @RestController
+@RequiredArgsConstructor
 public class PersonController {
 
-    @Autowired
     private PersonRepository repository;
-
-    @PostMapping
-    public ResponseEntity<Person> createPerson(@Valid @RequestBody Person person) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(person));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Person>> getAll() {
-        return ResponseEntity.ok().body(repository.findAll());
-    }
-
-    @GetMapping(value = "/{id}")
-    public ResponseEntity<String> getPerson(@Valid @PathVariable("id") UUID id) {
-        return ResponseEntity.ok().body((repository.findById(id).orElseThrow(() -> new PersonNotFoundException(id))).toStringFull());
-    }
 
     @PutMapping(value = "/{id}")
     public String updatePerson(@Valid @PathVariable("id") UUID id, @Valid @RequestBody Person newPerson) {
@@ -50,3 +33,4 @@ public class PersonController {
                 .orElseThrow(() -> new PersonNotFoundException(id))).toStringFull();
     }
 }
+
