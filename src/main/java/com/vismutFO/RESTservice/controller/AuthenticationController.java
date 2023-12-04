@@ -5,10 +5,7 @@ import com.vismutFO.RESTservice.dao.request.SignUpRequest;
 import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
 import com.vismutFO.RESTservice.services.AuthenticationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 import lombok.RequiredArgsConstructor;
@@ -23,7 +20,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationService.signUp(request));
     }
 
-    @PostMapping("/signIn")
+    @GetMapping("/signIn")
     public ResponseEntity<JwtAuthenticationResponse> signIn(@RequestBody SignInRequest request) {
         return ResponseEntity.ok(authenticationService.signIn(request));
     }

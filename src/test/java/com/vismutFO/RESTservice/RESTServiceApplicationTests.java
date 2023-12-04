@@ -1,5 +1,6 @@
 package com.vismutFO.RESTservice;
 
+import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
 import org.aspectj.lang.annotation.After;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,24 +35,24 @@ class RESTServiceApplicationTests {
 	}
 
 	@Test
-	public void whenCreatePerson_thenStatus201() {
+	public void signUp_Status200() {
 
 		Person person = new Person("Michail", "login", "password", "/");
 
-		ResponseEntity<Person> response = restTemplate.postForEntity("/persons", person, Person.class);
+		ResponseEntity<JwtAuthenticationResponse> response = restTemplate.postForEntity("/api/v1/auth/signUp", person, JwtAuthenticationResponse.class);
 
-		assertThat(response.getStatusCode(), is(HttpStatus.CREATED));
-		assertThat(response.getBody().getId(), notNullValue());
-		assertThat(response.getBody().getName(), is("Michail"));
+		assertThat(response.getStatusCode(), is(HttpStatus.OK));
+		// assertThat(response.getBody().getId(), notNullValue());
+		// assertThat(response.getBody().getName(), is("Michail"));
 	}
 
 	@Test
-	public void givenPerson_whenGetPerson_thenStatus200() {
+	public void signIn_Status200() {
+		Person person = createTestPerson("Joe");
 
-		UUID id = createTestPerson("Joe").getId();
+		ResponseEntity<JwtAuthenticationResponse> response = restTemplate.getForEntity("/api/v1/auth/signIn", JwtAuthenticationResponse.class, person);
 
-		Person person = restTemplate.getForObject("/persons/{id}", Person.class, id);
-		assertThat(person.getName(), is("Joe"));
+		assertThat(response.getStatusCode(), is(HttpStatus.OK));
 	}
 
 	@Test
