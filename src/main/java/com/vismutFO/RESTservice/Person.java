@@ -2,6 +2,7 @@ package com.vismutFO.RESTservice;
 
 
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "_user")
+@Table(name = "users")
 public class Person implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -34,11 +35,16 @@ public class Person implements UserDetails {
     private String password;
     private String url;
 
+    @NotNull(message = "Role is mandatory")
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
     public Person (String name, String login, String password, String url) {
         this.name = name;
         this.login = login;
         this.password = password;
         this.url = url;
+        this.role = Role.USER;
     }
 
     public UUID getId() {
@@ -53,9 +59,10 @@ public class Person implements UserDetails {
         return login;
     }
 
+    @JsonDeserialize(using = CustomAuthorityDeserializer.class)
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("user"));
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     public String getPassword() {
@@ -64,27 +71,27 @@ public class Person implements UserDetails {
 
     @Override
     public String getUsername() {
-        return null;
+        return name;
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return false;
+        return true;
     }
 
     public String getUrl() {

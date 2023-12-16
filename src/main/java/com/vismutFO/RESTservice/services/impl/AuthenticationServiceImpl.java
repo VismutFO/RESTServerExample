@@ -1,8 +1,10 @@
 package com.vismutFO.RESTservice.services.impl;
 
+import com.vismutFO.RESTservice.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,8 +27,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public JwtAuthenticationResponse signUp(SignUpRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Empty request");
+        }
         Person person = Person.builder().name(request.getName()).login(request.getLogin())
-                .url(request.getUrl()).password(passwordEncoder.encode(request.getPassword())).build();
+                .url(request.getUrl()).password(passwordEncoder.encode(request.getPassword())).role(Role.USER).build();
         personRepository.save(person);
         String jwt = jwtService.generateToken(person);
         return new JwtAuthenticationResponse(jwt);
@@ -34,8 +39,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public JwtAuthenticationResponse signIn(SignInRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getName(), request.getPassword()));
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getName(), request.getPassword()));
+        } catch (Exception e) {
+            System.out.println(e);
+            return null;
+        }
         Person person = personRepository.findByName(request.getName())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
         String jwt = jwtService.generateToken(person);

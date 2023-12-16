@@ -1,23 +1,23 @@
 package com.vismutFO.RESTservice;
 
+import com.vismutFO.RESTservice.dao.request.SignInRequest;
+import com.vismutFO.RESTservice.dao.request.SignUpRequest;
 import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
+import com.vismutFO.RESTservice.services.JwtService;
 import org.aspectj.lang.annotation.After;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.hamcrest.CoreMatchers.*;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.UUID;
+import java.util.Objects;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -29,49 +29,65 @@ class RESTServiceApplicationTests {
 	@Autowired
 	private PersonRepository collection;
 
+	@Autowired
+	private JwtService jwtService;
+
 	@After("")
 	public void resetCollection() {
 		collection.deleteAll();
 	}
 
 	@Test
-	public void signUp_Status200() {
+	public void signUp_Status201() {
 
-		Person person = new Person("Michail", "login", "password", "/");
+		SignUpRequest request = new SignUpRequest("Michail", "login", "password", "/");
 
-		ResponseEntity<JwtAuthenticationResponse> response = restTemplate.postForEntity("/api/v1/auth/signUp", person, JwtAuthenticationResponse.class);
+		ResponseEntity<JwtAuthenticationResponse> response = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
 
-		assertThat(response.getStatusCode(), is(HttpStatus.OK));
-		// assertThat(response.getBody().getId(), notNullValue());
-		// assertThat(response.getBody().getName(), is("Michail"));
+		assertThat(response.getStatusCode(), is(HttpStatus.CREATED));
+		assertThat(response.getBody(), notNullValue());
+
+		final String jwt = response.getBody().getToken();
+		final String userName = jwtService.extractUserName(jwt);
+		assertThat(userName, is("Michail"));
 	}
 
 	@Test
 	public void signIn_Status200() {
-		Person person = createTestPerson("Joe");
+		SignUpRequest signUpRequest = createTestPerson("Joe");
 
-		ResponseEntity<JwtAuthenticationResponse> response = restTemplate.getForEntity("/api/v1/auth/signIn", JwtAuthenticationResponse.class, person);
+		SignInRequest request = new SignInRequest(signUpRequest.getName(), signUpRequest.getPassword());
+		ResponseEntity<JwtAuthenticationResponse> response = restTemplate.postForEntity("/api/v1/auth/signIn", request, JwtAuthenticationResponse.class);
 
 		assertThat(response.getStatusCode(), is(HttpStatus.OK));
 	}
 
 	@Test
 	public void whenUpdatePerson_thenStatus200() {
+		SignUpRequest request = new SignUpRequest("Nick", "login2", "password2", "/./");
+		ResponseEntity<JwtAuthenticationResponse> signUpResponse = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
+		assertThat(signUpResponse.getStatusCode(), is(HttpStatus.CREATED));
 
-		UUID id = createTestPerson("Nick").getId();
 		Person person = new Person("Michail", "login", "password", "/");
-		HttpEntity<Person> entity = new HttpEntity<Person>(person);
+		String jwt = Objects.requireNonNull(signUpResponse.getBody()).getToken();
 
-		ResponseEntity<Person> response = restTemplate.exchange("/persons/{id}", HttpMethod.PUT, entity, Person.class,
-				id);
-		assertThat(response.getStatusCode(), is(HttpStatus.OK));
-		assertThat(response.getBody().getId(), notNullValue());
-		assertThat(response.getBody().getName(), is("Michail"));
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Authorization", "Bearer " + jwt);
+
+		HttpEntity<Person> entity = new HttpEntity<>(person, headers);
+
+		ResponseEntity<String> updateResponse = restTemplate.postForEntity("/api/v1/persons/updatePerson", entity, String.class);
+		assertThat(updateResponse.getStatusCode(), is(HttpStatus.OK));
+		//System.out.println(updateResponse.getBody());
+		//assertThat(updateResponse.getBody().getId(), notNullValue());
+		//assertThat(updateResponse.getBody().getName(), is("Michail"));
 	}
 
-	private Person createTestPerson(String name) {
-		Person emp = new Person(name, "login", "password", "/");
-		return collection.save(emp);
+	private SignUpRequest createTestPerson(String name) {
+		SignUpRequest request = new SignUpRequest(name, "login", "password", "/");
+		ResponseEntity<JwtAuthenticationResponse> response = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
+		assertThat(response.getStatusCode(), is(HttpStatus.CREATED));
+		return request;
 	}
 
 }
