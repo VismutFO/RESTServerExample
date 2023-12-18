@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,15 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String extractUserName(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    @Override
+    public String extractUserNameFromHeader(String header) throws IllegalArgumentException {
+        if (StringUtils.isEmpty(header) || !StringUtils.startsWith(header, "Bearer ")) {
+            throw new IllegalArgumentException("Missing or invalid authHeader");
+        }
+        String jwt = header.substring(7);
+        return  extractUserName(jwt);
     }
 
     @Override

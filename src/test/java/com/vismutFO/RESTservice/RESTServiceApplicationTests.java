@@ -1,5 +1,7 @@
 package com.vismutFO.RESTservice;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.vismutFO.RESTservice.dao.request.SignInRequest;
 import com.vismutFO.RESTservice.dao.request.SignUpRequest;
 import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
@@ -12,11 +14,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.hamcrest.CoreMatchers.*;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.util.Map;
 import java.util.Objects;
 
 @ExtendWith(SpringExtension.class)
@@ -78,9 +82,18 @@ class RESTServiceApplicationTests {
 
 		ResponseEntity<String> updateResponse = restTemplate.postForEntity("/api/v1/persons/updatePerson", entity, String.class);
 		assertThat(updateResponse.getStatusCode(), is(HttpStatus.OK));
-		//System.out.println(updateResponse.getBody());
-		//assertThat(updateResponse.getBody().getId(), notNullValue());
-		//assertThat(updateResponse.getBody().getName(), is("Michail"));
+		Map<String, String> parsedResponse;
+		try {
+			parsedResponse = new ObjectMapper().readValue(updateResponse.getBody(), Map.class);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+		assertThat(parsedResponse.get("id"), notNullValue());
+		assertThat(parsedResponse.get("name"), is("Michail"));
+		assertThat(parsedResponse.get("login"), is("login"));
+		assertThat(parsedResponse.get("password"), is("password"));
+		assertThat(parsedResponse.get("url"), is("/"));
 	}
 
 	private SignUpRequest createTestPerson(String name) {
