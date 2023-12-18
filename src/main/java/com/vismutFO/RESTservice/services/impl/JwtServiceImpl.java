@@ -4,8 +4,10 @@ import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
+import com.vismutFO.RESTservice.JWTType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -28,8 +30,18 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+    public String extractJWTType(String token) {
+        return extractClaim(token, Claims::get);
+    }
+
+    @Override
+    public String extractTokenId(String token) {
+        return extractClaim(token, Claims::get);
+    }
+
+    @Override
+    public String generateToken(UserDetails userDetails, JWTType type, UUID tokenId) {
+        return generateToken(new HashMap<>(), userDetails, type, tokenId);
     }
 
     @Override
@@ -43,9 +55,12 @@ public class JwtServiceImpl implements JwtService {
         return claimsResolvers.apply(claims);
     }
 
-    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, JWTType type, UUID tokenId) {
         assert userDetails != null;
+        assert type != null;
         return Jwts.builder().setClaims(extraClaims).setSubject(userDetails.getUsername())
+                .claim("type", type)
+                .claim("token-id", tokenId)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();

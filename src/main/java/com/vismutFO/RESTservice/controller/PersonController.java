@@ -1,16 +1,16 @@
 package com.vismutFO.RESTservice.controller;
 
-import com.vismutFO.RESTservice.Person;
-import com.vismutFO.RESTservice.PersonNotFoundException;
-import com.vismutFO.RESTservice.PersonRepository;
+import com.vismutFO.RESTservice.*;
 import com.vismutFO.RESTservice.services.JwtService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,6 +30,8 @@ public class PersonController {
 
     private final PersonRepository repository;
 
+    private final JWTRepository jwtRepository;
+
     private final JwtService jwtService;
 
     @PostMapping(value = "/updatePerson")
@@ -48,6 +50,27 @@ public class PersonController {
                     return repository.save(person);
                 })
                 .orElseThrow(() -> new PersonNotFoundException(userName)).toStringFull());
+    }
+
+    @GetMapping(value = "/shareProfile")
+    public ResponseEntity<String> shareProfile(@Valid @RequestHeader("Authorization") String authHeader) {
+        if (StringUtils.isEmpty(authHeader) || !StringUtils.startsWith(authHeader, "Bearer ")) {
+            throw new IllegalArgumentException("Missing or invalid authHeader");
+        }
+        String jwt = authHeader.substring(7);
+        String userName = jwtService.extractUserName(jwt);
+        Optional<Person> user = repository.findByName(userName);
+        UserDetails userDetails;
+        if (user.isEmpty()) {
+            throw new PersonNotFoundException(userName);
+        }
+        else {
+            userDetails = user.get();
+        }
+        UUID tokenId = UUID.randomUUID();
+        String disposableJwt = jwtService.generateToken(userDetails, JWTType.DISPOSABLE, tokenId);
+        jwtRepository.save(new DisposableJWT(tokenId, disposableJwt));
+        return ResponseEntity.ok().body(disposableJwt);
     }
 
     @GetMapping(value = "/allPersons")
