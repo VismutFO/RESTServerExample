@@ -4,7 +4,6 @@ import com.vismutFO.RESTservice.*;
 import com.vismutFO.RESTservice.services.JwtService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -36,11 +35,7 @@ public class PersonController {
 
     @PostMapping(value = "/updatePerson")
     public ResponseEntity<String> updatePerson(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestBody Person newPerson) {
-        if (StringUtils.isEmpty(authHeader) || !StringUtils.startsWith(authHeader, "Bearer ")) {
-            throw new IllegalArgumentException("Missing or invalid authHeader");
-        }
-        String jwt = authHeader.substring(7);
-        String userName = jwtService.extractUserName(jwt);
+        String userName = jwtService.extractUserNameFromHeader(authHeader);
         return ResponseEntity.ok().body(repository.findByName(userName)
                 .map(person -> {
                     person.setName(newPerson.getName());
@@ -54,11 +49,7 @@ public class PersonController {
 
     @GetMapping(value = "/shareProfile")
     public ResponseEntity<String> shareProfile(@Valid @RequestHeader("Authorization") String authHeader) {
-        if (StringUtils.isEmpty(authHeader) || !StringUtils.startsWith(authHeader, "Bearer ")) {
-            throw new IllegalArgumentException("Missing or invalid authHeader");
-        }
-        String jwt = authHeader.substring(7);
-        String userName = jwtService.extractUserName(jwt);
+        String userName = jwtService.extractUserNameFromHeader(authHeader);
         Optional<Person> user = repository.findByName(userName);
         UserDetails userDetails;
         if (user.isEmpty()) {
@@ -81,11 +72,7 @@ public class PersonController {
 
     @GetMapping(value = "/profile")
     public ResponseEntity<String> getPerson(@Valid @RequestHeader("Authorization") String authHeader) {
-        if (StringUtils.isEmpty(authHeader) || !StringUtils.startsWith(authHeader, "Bearer ")) {
-            throw new IllegalArgumentException("Missing or invalid authHeader");
-        }
-        String jwt = authHeader.substring(7);
-        String userName = jwtService.extractUserName(jwt);
+        String userName = jwtService.extractUserNameFromHeader(authHeader);
         return ResponseEntity.ok().body(repository.findByName(userName).orElseThrow(() -> new PersonNotFoundException(userName)).toStringFull());
     }
 }

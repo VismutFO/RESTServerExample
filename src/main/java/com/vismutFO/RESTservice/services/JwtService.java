@@ -10,5 +10,7 @@ public interface JwtService {
 
     String generateToken(UserDetails userDetails, JWTType type, UUID id);
 
+    String extractUserNameFromHeader(String header) throws IllegalArgumentException;
+
     boolean isTokenValid(String token, UserDetails userDetails);
 }
