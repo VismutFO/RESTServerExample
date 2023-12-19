@@ -1,6 +1,5 @@
 package com.vismutFO.RESTservice.services.impl;
 
-import com.vismutFO.RESTservice.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,7 +32,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new IllegalArgumentException("Empty request");
         }
         Person person = Person.builder().name(request.getName()).login(request.getLogin())
-                .url(request.getUrl()).password(passwordEncoder.encode(request.getPassword())).role(Role.USER).build();
+                .url(request.getUrl()).password(passwordEncoder.encode(request.getPassword())).build();
         personRepository.save(person);
         String jwt = jwtService.generateToken(person, "CONSTANT", UUID.randomUUID(), new Date(System.currentTimeMillis() + 1000 * 60 * 24));
         return new JwtAuthenticationResponse(jwt);

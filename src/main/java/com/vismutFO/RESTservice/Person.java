@@ -32,17 +32,11 @@ public class Person implements UserDetails {
     @NotNull(message = "Password is mandatory")
     private String password;
     private String url;
-
-    @NotNull(message = "Role is mandatory")
-    @Enumerated(EnumType.STRING)
-    private Role role;
-
     public Person (String name, String login, String password, String url) {
         this.name = name;
         this.login = login;
         this.password = password;
         this.url = url;
-        this.role = Role.USER;
     }
 
     public UUID getId() {
@@ -60,7 +54,7 @@ public class Person implements UserDetails {
     @JsonDeserialize(using = CustomAuthorityDeserializer.class)
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        return List.of(new SimpleGrantedAuthority("user"));
     }
 
     public String getPassword() {

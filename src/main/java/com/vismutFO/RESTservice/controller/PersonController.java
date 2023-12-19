@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -35,26 +36,28 @@ public class PersonController {
 
     private final JwtService jwtService;
 
+    private final PasswordEncoder passwordEncoder;
+
     @PostMapping(value = "/updatePerson")
     public ResponseEntity<String> updatePerson(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestBody Person newPerson) {
-        System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        //System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
         if (jwtType.equals("DISPOSABLE")) {
-            System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+            //System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
             throw new IllegalArgumentException("Cannot use updatePerson with disposable jwt");
         }
         else if (!jwtType.equals("CONSTANT")) {
-            System.out.println("cccccccccccccccccccccccccccccccccccccccc");
+            //System.out.println("cccccccccccccccccccccccccccccccccccccccc");
             throw new IllegalArgumentException("Invalid jwt type");
         }
-        System.out.println("dddddddddddddddddddddddddddddddddddddd");
+        //System.out.println("dddddddddddddddddddddddddddddddddddddd");
         String userName = jwtService.extractClaimFromHeader(authHeader, "name");
-        System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+        //System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
         return ResponseEntity.ok().body(repository.findByName(userName)
                 .map(person -> {
                     person.setName(newPerson.getName());
                     person.setLogin(newPerson.getLogin());
-                    person.setPassword(newPerson.getPassword());
+                    person.setPassword(passwordEncoder.encode(newPerson.getPassword()));
                     person.setUrl(newPerson.getUrl());
                     return repository.save(person);
                 })
