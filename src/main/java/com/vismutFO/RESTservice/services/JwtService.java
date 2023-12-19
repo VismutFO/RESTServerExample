@@ -1,16 +1,16 @@
 package com.vismutFO.RESTservice.services;
 
-import com.vismutFO.RESTservice.JWTType;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Date;
 import java.util.UUID;
 
 public interface JwtService {
     String extractUserName(String token);
 
-    String generateToken(UserDetails userDetails, JWTType type, UUID id);
+    String generateToken(UserDetails userDetails, String type, UUID id, Date expireDate);
 
-    String extractUserNameFromHeader(String header) throws IllegalArgumentException;
+    String extractClaimFromHeader(String header, String claim) throws IllegalArgumentException;
 
     boolean isTokenValid(String token, UserDetails userDetails);
 }

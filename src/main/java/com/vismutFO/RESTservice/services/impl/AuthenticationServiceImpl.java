@@ -1,11 +1,9 @@
 package com.vismutFO.RESTservice.services.impl;
 
-import com.vismutFO.RESTservice.JWTType;
 import com.vismutFO.RESTservice.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +15,7 @@ import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
 import com.vismutFO.RESTservice.services.AuthenticationService;
 import com.vismutFO.RESTservice.services.JwtService;
 
+import java.util.Date;
 import java.util.UUID;
 
 
@@ -36,7 +35,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Person person = Person.builder().name(request.getName()).login(request.getLogin())
                 .url(request.getUrl()).password(passwordEncoder.encode(request.getPassword())).role(Role.USER).build();
         personRepository.save(person);
-        String jwt = jwtService.generateToken(person, JWTType.CONSTANT, UUID.randomUUID());
+        String jwt = jwtService.generateToken(person, "CONSTANT", UUID.randomUUID(), new Date(System.currentTimeMillis() + 1000 * 60 * 24));
         return new JwtAuthenticationResponse(jwt);
     }
 
@@ -51,7 +50,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
         Person person = personRepository.findByName(request.getName())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
-        String jwt = jwtService.generateToken(person, JWTType.CONSTANT, UUID.randomUUID());
+        String jwt = jwtService.generateToken(person, "CONSTANT", UUID.randomUUID(), new Date(System.currentTimeMillis() + 1000 * 60 * 24));
         return new JwtAuthenticationResponse(jwt);
     }
 }

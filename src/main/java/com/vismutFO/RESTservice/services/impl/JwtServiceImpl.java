@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
-import com.vismutFO.RESTservice.JWTType;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,25 +30,20 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String extractJWTType(String token) {
-        return extractClaim(token, Claims::get);
+    public String generateToken(UserDetails userDetails, String type, UUID tokenId, Date expireDate) {
+        return generateToken(new HashMap<>(), userDetails, type, tokenId, expireDate);
     }
 
     @Override
-    public String extractTokenId(String token) {
-        return extractClaim(token, Claims::get);
-    }
-
-    @Override
-    public String generateToken(UserDetails userDetails, JWTType type, UUID tokenId) {
-        return generateToken(new HashMap<>(), userDetails, type, tokenId);
-    }
-    public String extractUserNameFromHeader(String header) throws IllegalArgumentException {
+    public String extractClaimFromHeader(String header, String claim) throws IllegalArgumentException {
         if (StringUtils.isEmpty(header) || !StringUtils.startsWith(header, "Bearer ")) {
             throw new IllegalArgumentException("Missing or invalid authHeader");
         }
         String jwt = header.substring(7);
-        return  extractUserName(jwt);
+        if (claim.equals("name")) {
+            return extractUserName(jwt);
+        }
+        return extractClaim(jwt, claim);
     }
 
     @Override
@@ -63,14 +57,19 @@ public class JwtServiceImpl implements JwtService {
         return claimsResolvers.apply(claims);
     }
 
-    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, JWTType type, UUID tokenId) {
+    private String extractClaim(String token, String claim) {
+        final Claims claims = extractAllClaims(token);
+        return (String) claims.get(claim);
+    }
+
+    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, String type, UUID tokenId, Date expireDate) {
         assert userDetails != null;
         assert type != null;
         return Jwts.builder().setClaims(extraClaims).setSubject(userDetails.getUsername())
                 .claim("type", type)
                 .claim("token-id", tokenId)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
+                .setExpiration(expireDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
     }
 
@@ -83,8 +82,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token)
-                .getBody();
+        return Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token).getBody();
     }
 
     private Key getSigningKey() {

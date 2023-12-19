@@ -71,6 +71,7 @@ class RESTServiceApplicationTests {
 		SignUpRequest request = new SignUpRequest("Nick", "login2", "password2", "/./");
 		ResponseEntity<JwtAuthenticationResponse> signUpResponse = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
 		assertThat(signUpResponse.getStatusCode(), is(HttpStatus.CREATED));
+		System.out.println("After signUp!!!!!!!!!!!!!!!!!!!!");
 
 		Person person = new Person("Michail", "login", "password", "/");
 		String jwt = Objects.requireNonNull(signUpResponse.getBody()).getToken();
