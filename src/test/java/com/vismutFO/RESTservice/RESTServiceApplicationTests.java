@@ -101,7 +101,7 @@ class RESTServiceApplicationTests {
 
 	@Test
 	public void whenGetPerson_thenStatus200() {
-		SignUpRequest request = new SignUpRequest("Adam", "login2", "password2", "/./");
+		SignUpRequest request = new SignUpRequest("Artem", "login2", "password2", "/./");
 		ResponseEntity<JwtAuthenticationResponse> signUpResponse = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
 		assertThat(signUpResponse.getStatusCode(), is(HttpStatus.CREATED));
 
@@ -122,7 +122,7 @@ class RESTServiceApplicationTests {
 			throw new RuntimeException(e);
 		}
 		assertThat(parsedResponse.get("id"), notNullValue());
-		assertThat(parsedResponse.get("name"), is("Adam"));
+		assertThat(parsedResponse.get("name"), is("Artem"));
 		assertThat(parsedResponse.get("login"), is("login2"));
 		assertThat(parsedResponse.get("password"), notNullValue());
 		assertThat(parsedResponse.get("url"), is("/./"));
@@ -153,7 +153,7 @@ class RESTServiceApplicationTests {
 		ResponseEntity<String> getResponseWithDisposableJwt = restTemplate.exchange("/api/v1/persons/getProfileByDisposable", HttpMethod.GET, entityWithDisposableJwt, String.class);
 
 		assertThat(getResponseWithDisposableJwt.getStatusCode(), is(HttpStatus.OK));
-		
+
 		Map<String, String> parsedResponse;
 		try {
 			parsedResponse = new ObjectMapper().readValue(getResponseWithDisposableJwt.getBody(), Map.class);
