@@ -2,6 +2,10 @@ package com.vismutFO.RESTservice.controller;
 
 import com.vismutFO.RESTservice.*;
 import com.vismutFO.RESTservice.services.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,27 +14,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RequestMapping("/api/v1/persons")
 @RestController
 @RequiredArgsConstructor
 public class PersonController {
-
-    private static class PersonNameAndId {
-        UUID id;
-        String name;
-        PersonNameAndId(UUID id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-    }
 
     private final PersonRepository repository;
 
@@ -39,6 +30,10 @@ public class PersonController {
     private final JwtService jwtService;
 
     private final PasswordEncoder passwordEncoder;
+
+    private final MeterRegistry meterRegistry;
+
+    private Timer.Sample timer;
 
     @PostMapping(value = "/updatePerson")
     public ResponseEntity<String> updatePerson(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestBody Person newPerson) {
@@ -88,20 +83,8 @@ public class PersonController {
             throw new RuntimeException(e);
         }
         jwtRepository.save(new DisposableJWT(tokenId, disposableJwt));
+        timer = Timer.start(meterRegistry);
         return ResponseEntity.ok().body(disposableJwt);
-    }
-
-    @GetMapping(value = "/allPersons")
-    public ResponseEntity<List<PersonNameAndId>> getAll(@Valid @RequestHeader("Authorization") String authHeader) {
-        String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
-        if (jwtType.equals("DISPOSABLE")) {
-            throw new IllegalArgumentException("Cannot use getAll with disposable jwt");
-        }
-        else if (!jwtType.equals("CONSTANT")) {
-            throw new IllegalArgumentException("Invalid jwt type");
-        }
-        return ResponseEntity.ok().body(repository.findAll().stream().map(person -> new PersonNameAndId(person.getId(), person.getName()))
-                .collect(Collectors.toList()));
     }
 
     @GetMapping(value = "/profile")
@@ -127,16 +110,33 @@ public class PersonController {
         else if (!jwtType.equals("DISPOSABLE")) {
             throw new IllegalArgumentException("Invalid jwt type");
         }
-        String userName = jwtService.extractClaimFromHeader(authHeader, "name");
-        String jwt = authHeader.substring(7);
-        if (!jwtService.isTokenValid(jwt, repository.findByName(userName).orElseThrow(() -> new PersonNotFoundException(userName)))) {
-            throw new IllegalArgumentException("token expired");
+        String userName;
+        try {
+            userName = jwtService.extractClaimFromHeader(authHeader, "name");
+        } catch (ExpiredJwtException e) {
+            System.out.println("Caught jwt exception");
+            Counter timeExpiredCounter = Counter.builder("timeExpiredAttempts")
+                    .tag("title", "timeExpiredAttempts")
+                    .description("a number of attempts go to someone else's profile with expired jwt")
+                    .register(meterRegistry);
+            timeExpiredCounter.increment();
+            throw e;
         }
+        String jwt = authHeader.substring(7);
         Optional<DisposableJWT> jwtInRep = jwtRepository.findByJwt(jwt);
         if (jwtInRep.isEmpty()) {
+            Counter alreadyUsedCounter = Counter.builder("alreadyUsedAttempts")
+                    .tag("title", "alreadyUsedAttempts")
+                    .description("a number of attempts go to someone else's profile with already used jwt")
+                    .register(meterRegistry);
+            alreadyUsedCounter.increment();
             throw new IllegalArgumentException("token have been used already");
         }
         jwtRepository.delete(jwtInRep.get());
+        timer.stop(Timer.builder("timeForUse")
+                .description("books searching timer")
+                .tag("title", "timeForUse")
+                .register(meterRegistry));
         return ResponseEntity.ok().body(repository.findByName(userName).orElseThrow(() -> new PersonNotFoundException(userName)).toStringFull());
     }
 }
