@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -40,19 +42,14 @@ public class PersonController {
 
     @PostMapping(value = "/updatePerson")
     public ResponseEntity<String> updatePerson(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestBody Person newPerson) {
-        //System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
         if (jwtType.equals("DISPOSABLE")) {
-            //System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
             throw new IllegalArgumentException("Cannot use updatePerson with disposable jwt");
         }
         else if (!jwtType.equals("CONSTANT")) {
-            //System.out.println("cccccccccccccccccccccccccccccccccccccccc");
             throw new IllegalArgumentException("Invalid jwt type");
         }
-        //System.out.println("dddddddddddddddddddddddddddddddddddddd");
         String userName = jwtService.extractClaimFromHeader(authHeader, "name");
-        //System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
         return ResponseEntity.ok().body(repository.findByName(userName)
                 .map(person -> {
                     person.setName(newPerson.getName());
@@ -65,10 +62,10 @@ public class PersonController {
     }
 
     @GetMapping(value = "/shareProfile")
-    public ResponseEntity<String> shareProfile(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestBody Date expireDate) {
+    public ResponseEntity<String> shareProfile(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestHeader("Expires") String expireDate) {
         String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
         if (jwtType.equals("DISPOSABLE")) {
-            throw new IllegalArgumentException("Cannot use updatePerson with disposable jwt");
+            throw new IllegalArgumentException("Cannot use sharePerson with disposable jwt");
         }
         else if (!jwtType.equals("CONSTANT")) {
             throw new IllegalArgumentException("Invalid jwt type");
@@ -83,7 +80,13 @@ public class PersonController {
             userDetails = user.get();
         }
         UUID tokenId = UUID.randomUUID();
-        String disposableJwt = jwtService.generateToken(userDetails, "DISPOSABLE", tokenId, expireDate);
+        String disposableJwt;
+        try {
+            disposableJwt = jwtService.generateToken(userDetails, "DISPOSABLE", tokenId, new Date(Long.parseLong(expireDate)));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
         jwtRepository.save(new DisposableJWT(tokenId, disposableJwt));
         return ResponseEntity.ok().body(disposableJwt);
     }
@@ -92,7 +95,7 @@ public class PersonController {
     public ResponseEntity<List<PersonNameAndId>> getAll(@Valid @RequestHeader("Authorization") String authHeader) {
         String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
         if (jwtType.equals("DISPOSABLE")) {
-            throw new IllegalArgumentException("Cannot use updatePerson with disposable jwt");
+            throw new IllegalArgumentException("Cannot use getAll with disposable jwt");
         }
         else if (!jwtType.equals("CONSTANT")) {
             throw new IllegalArgumentException("Invalid jwt type");
@@ -105,7 +108,7 @@ public class PersonController {
     public ResponseEntity<String> getPerson(@Valid @RequestHeader("Authorization") String authHeader) {
         String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
         if (jwtType.equals("DISPOSABLE")) {
-            throw new IllegalArgumentException("Cannot use updatePerson with disposable jwt");
+            throw new IllegalArgumentException("Cannot use getPerson with disposable jwt");
         }
         else if (!jwtType.equals("CONSTANT")) {
             throw new IllegalArgumentException("Invalid jwt type");
@@ -119,7 +122,7 @@ public class PersonController {
     public ResponseEntity<String> getPersonDisposable(@Valid @RequestHeader("Authorization") String authHeader) {
         String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
         if (jwtType.equals("CONSTANT")) {
-            throw new IllegalArgumentException("Cannot use updatePerson with disposable jwt");
+            throw new IllegalArgumentException("Cannot use getPersonDisposable with constant jwt");
         }
         else if (!jwtType.equals("DISPOSABLE")) {
             throw new IllegalArgumentException("Invalid jwt type");

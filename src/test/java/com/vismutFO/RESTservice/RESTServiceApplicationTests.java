@@ -19,6 +19,7 @@ import static org.hamcrest.CoreMatchers.*;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
@@ -73,7 +74,6 @@ class RESTServiceApplicationTests {
 		SignUpRequest request = new SignUpRequest("Nick", "login2", "password2", "/./");
 		ResponseEntity<JwtAuthenticationResponse> signUpResponse = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
 		assertThat(signUpResponse.getStatusCode(), is(HttpStatus.CREATED));
-		//System.out.println("After signUp!!!!!!!!!!!!!!!!!!!!");
 
 		Person person = new Person("Jack", "login", "password", "/");
 		String jwt = Objects.requireNonNull(signUpResponse.getBody()).getToken();
@@ -104,7 +104,6 @@ class RESTServiceApplicationTests {
 		SignUpRequest request = new SignUpRequest("Adam", "login2", "password2", "/./");
 		ResponseEntity<JwtAuthenticationResponse> signUpResponse = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
 		assertThat(signUpResponse.getStatusCode(), is(HttpStatus.CREATED));
-		//System.out.println("After signUp!!!!!!!!!!!!!!!!!!!!");
 
 		String jwt = Objects.requireNonNull(signUpResponse.getBody()).getToken();
 
@@ -113,11 +112,11 @@ class RESTServiceApplicationTests {
 
 		HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-		ResponseEntity<String> updateResponse = restTemplate.exchange("/api/v1/persons/profile", HttpMethod.GET, entity, String.class);
-		assertThat(updateResponse.getStatusCode(), is(HttpStatus.OK));
+		ResponseEntity<String> getResponse = restTemplate.exchange("/api/v1/persons/profile", HttpMethod.GET, entity, String.class);
+		assertThat(getResponse.getStatusCode(), is(HttpStatus.OK));
 		Map<String, String> parsedResponse;
 		try {
-			parsedResponse = new ObjectMapper().readValue(updateResponse.getBody(), Map.class);
+			parsedResponse = new ObjectMapper().readValue(getResponse.getBody(), Map.class);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
@@ -127,6 +126,51 @@ class RESTServiceApplicationTests {
 		assertThat(parsedResponse.get("login"), is("login2"));
 		assertThat(parsedResponse.get("password"), notNullValue());
 		assertThat(parsedResponse.get("url"), is("/./"));
+	}
+
+	@Test
+	public void getDisposableJWTAndUse_thenStatus200() {
+		SignUpRequest request = new SignUpRequest("Adam", "login2", "password2", "/./");
+		ResponseEntity<JwtAuthenticationResponse> signUpResponse = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
+		assertThat(signUpResponse.getStatusCode(), is(HttpStatus.CREATED));
+
+		String jwt = Objects.requireNonNull(signUpResponse.getBody()).getToken();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Authorization", "Bearer " + jwt);
+		headers.add("Expires", String.valueOf(new Date(System.currentTimeMillis() + 1000 * 60 * 24).getTime()));
+
+		HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+		ResponseEntity<String> shareResponse = restTemplate.exchange("/api/v1/persons/shareProfile", HttpMethod.GET, entity, String.class);
+		assertThat(shareResponse.getStatusCode(), is(HttpStatus.OK));
+
+		String disposableJwt = shareResponse.getBody();
+
+		HttpHeaders headersWithDisposableJwt = new HttpHeaders();
+		headersWithDisposableJwt.add("Authorization", "Bearer " + disposableJwt);
+		HttpEntity<Void> entityWithDisposableJwt = new HttpEntity<>(headersWithDisposableJwt);
+		ResponseEntity<String> getResponseWithDisposableJwt = restTemplate.exchange("/api/v1/persons/getProfileByDisposable", HttpMethod.GET, entityWithDisposableJwt, String.class);
+
+		assertThat(getResponseWithDisposableJwt.getStatusCode(), is(HttpStatus.OK));
+		
+		Map<String, String> parsedResponse;
+		try {
+			parsedResponse = new ObjectMapper().readValue(getResponseWithDisposableJwt.getBody(), Map.class);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+		assertThat(parsedResponse.get("id"), notNullValue());
+		assertThat(parsedResponse.get("name"), is("Adam"));
+		assertThat(parsedResponse.get("login"), is("login2"));
+		assertThat(parsedResponse.get("password"), notNullValue());
+		assertThat(parsedResponse.get("url"), is("/./"));
+
+		// try second time with same token, should be forbidden
+		ResponseEntity<String> getResponseWithDisposableJwtSecondTime = restTemplate.exchange("/api/v1/persons/getProfileByDisposable", HttpMethod.GET, entityWithDisposableJwt, String.class);
+
+		assertThat(getResponseWithDisposableJwtSecondTime.getStatusCode(), is(HttpStatus.FORBIDDEN));
 	}
 
 	private SignUpRequest createTestPerson(String name) {
