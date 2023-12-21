@@ -21,6 +21,13 @@ class ExceptionController {
         return ex.getMessage();
     }
 
+    @ResponseBody
+    @ExceptionHandler(FolderNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    String folderNotFoundHandler(EntryLoginPasswordNotFoundException ex) {
+        return ex.getMessage();
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {

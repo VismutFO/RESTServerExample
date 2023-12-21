@@ -33,6 +33,8 @@ public class EntryLoginPassword implements UserDetails {
     private String url;
     @NotNull(message = "ownerName is mandatory")
     private String ownerName;
+
+    private UUID folderId;
     public EntryLoginPassword(String name, String login, String password, String url) {
         this.name = name;
         this.login = login;
@@ -65,6 +67,9 @@ public class EntryLoginPassword implements UserDetails {
     }
     public String getOwnerName() {
         return ownerName;
+    }
+    public UUID getFolderId() {
+        return folderId;
     }
     @Override
     public String getUsername() {
@@ -108,6 +113,10 @@ public class EntryLoginPassword implements UserDetails {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public void setFolderId(UUID folderId) {
+        this.folderId = folderId;
     }
 
     @Override

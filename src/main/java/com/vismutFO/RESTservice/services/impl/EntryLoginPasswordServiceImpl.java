@@ -1,15 +1,18 @@
 package com.vismutFO.RESTservice.services.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vismutFO.RESTservice.EntrySpecification;
+import com.vismutFO.RESTservice.FolderSpecification;
 import com.vismutFO.RESTservice.JWTUsedClaims;
 import com.vismutFO.RESTservice.SearchCriteria;
 import com.vismutFO.RESTservice.dao.request.EntryRequest;
 import com.vismutFO.RESTservice.entities.DisposableJWT;
 import com.vismutFO.RESTservice.entities.EntryLoginPassword;
+import com.vismutFO.RESTservice.entities.Folder;
 import com.vismutFO.RESTservice.exceptions.EntryLoginPasswordNotFoundException;
+import com.vismutFO.RESTservice.exceptions.FolderNotFoundException;
 import com.vismutFO.RESTservice.repositories.EntryLoginPasswordRepository;
+import com.vismutFO.RESTservice.repositories.FolderRepository;
 import com.vismutFO.RESTservice.repositories.JWTRepository;
 import com.vismutFO.RESTservice.services.EntryLoginPasswordService;
 import com.vismutFO.RESTservice.services.JwtService;
@@ -18,6 +21,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -49,6 +53,8 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
 
     private final EntryLoginPasswordRepository entryLoginPasswordRepository;
 
+    private final FolderRepository folderRepository;
+
     private final UserService userService;
 
     private final JWTRepository jwtRepository;
@@ -62,7 +68,36 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
     private Timer.Sample timer;
 
     @Override
-    public ResponseEntity<String> addEntry(String authHeader, EntryRequest newEntry) {
+    public ResponseEntity<String> addFolder(String authHeader, String parentFolderRaw) {
+        String jwt = jwtService.getTokenFromHeader(authHeader);
+        String jwtType = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.TYPE);
+        if (jwtType.equals("DISPOSABLE")) {
+            throw new IllegalArgumentException("Cannot use addEntry with disposable jwt");
+        }
+        else if (!jwtType.equals("CONSTANT")) {
+            throw new IllegalArgumentException("Invalid jwt type");
+        }
+        String userName = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.NAME);
+        if (parentFolderRaw == null || parentFolderRaw.length() == 0) {
+            Folder folder = Folder.builder().parentId(null).ownerName(userName).build();
+            UUID folderId = folder.getId();
+            folderRepository.save(folder);
+            return ResponseEntity.ok().body(folderId.toString());
+        }
+        UUID parentFolderId = UUID.fromString(parentFolderRaw);
+        Folder parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new FolderNotFoundException(parentFolderId));
+        if (!userName.equals(parentFolder.getOwnerName())) {
+            throw new IllegalArgumentException("Trying to access someone else's folder");
+        }
+
+        Folder folder = Folder.builder().parentId(parentFolderId).ownerName(userName).build();
+        UUID folderId = folder.getId();
+        folderRepository.save(folder);
+        return ResponseEntity.ok().body(folderId.toString());
+    }
+
+    @Override
+    public ResponseEntity<String> addEntry(String authHeader, String parentFolderRaw, EntryRequest newEntry) {
         String jwt = jwtService.getTokenFromHeader(authHeader);
         String jwtType = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.TYPE);
         if (jwtType.equals("DISPOSABLE")) {
@@ -75,15 +110,29 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
             throw new IllegalArgumentException("entry name or entry password is null");
         }
         String userName = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.NAME);
+
         EntryLoginPassword entry = EntryLoginPassword.builder().name(newEntry.getEntryName())
                 .login(newEntry.getLogin()).password(passwordEncoder.encode(newEntry.getEntryPassword()))
                 .url(newEntry.getUrl()).ownerName(userName).build();
+
+        if (parentFolderRaw == null || parentFolderRaw.length() == 0) {
+            entryLoginPasswordRepository.save(entry);
+            return ResponseEntity.status(HttpStatus.CREATED).body(entry.getId().toString());
+        }
+
+        UUID parentFolderId = UUID.fromString(parentFolderRaw);
+        Folder parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new FolderNotFoundException(parentFolderId));
+        if (!userName.equals(parentFolder.getOwnerName())) {
+            throw new IllegalArgumentException("Trying to access someone else's folder");
+        }
+        entry.setFolderId(parentFolderId);
+
         entryLoginPasswordRepository.save(entry);
         return ResponseEntity.status(HttpStatus.CREATED).body(entry.getId().toString());
     }
 
     @Override
-    public ResponseEntity<String> updateEntry(String authHeader, String entryIdRaw, EntryRequest newEntry) {
+    public ResponseEntity<String> updateEntry(String authHeader, String entryIdRaw, String parentFolderRaw, EntryRequest newEntry) {
         String jwt = jwtService.getTokenFromHeader(authHeader);
         final String jwtType = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.TYPE);
         if (jwtType.equals("DISPOSABLE")) {
@@ -98,6 +147,25 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
         if (!userName.equals(entry.getOwnerName())) {
             throw new IllegalArgumentException("Trying to update someone else's entry");
         }
+        if (parentFolderRaw == null || parentFolderRaw.length() == 0) {
+            return ResponseEntity.ok().body(entryLoginPasswordRepository.findById(entryId)
+                    .map(person -> {
+                        person.setName(newEntry.getEntryName());
+                        person.setLogin(newEntry.getLogin());
+                        person.setPassword(passwordEncoder.encode(newEntry.getEntryPassword()));
+                        person.setUrl(newEntry.getUrl());
+                        return entryLoginPasswordRepository.save(person);
+                    })
+                    .orElseThrow(() -> new EntryLoginPasswordNotFoundException(entryId)).toStringFull());
+        }
+
+        UUID parentFolderId = UUID.fromString(parentFolderRaw);
+        Folder parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new FolderNotFoundException(parentFolderId));
+        if (!userName.equals(parentFolder.getOwnerName())) {
+            throw new IllegalArgumentException("Trying to access someone else's folder");
+        }
+        entry.setFolderId(parentFolderId);
+
         return ResponseEntity.ok().body(entryLoginPasswordRepository.findById(entryId)
                 .map(person -> {
                     person.setName(newEntry.getEntryName());
@@ -129,7 +197,7 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
     }
 
     @Override
-    public ResponseEntity<String> getAllEntries(String authHeader) {
+    public ResponseEntity<String> getAllEntries(String authHeader, String parentFolderRaw) {
         String jwt = jwtService.getTokenFromHeader(authHeader);
         String jwtType = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.TYPE);
         if (jwtType.equals("DISPOSABLE")) {
@@ -143,12 +211,65 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
                                                                         * otherwise it will throw an exception
                                                                         */
 
-        EntrySpecification spec = new EntrySpecification(new SearchCriteria("ownerName", ":", userName));
+        EntrySpecification spec1 = new EntrySpecification(new SearchCriteria("ownerName", ":", userName));
 
-        List<EntryLoginPassword> results = entryLoginPasswordRepository.findAll(spec);
+        UUID parentFolderId = null;
+        if (!(parentFolderRaw == null || parentFolderRaw.length() == 0)) {
+            parentFolderId = UUID.fromString(parentFolderRaw);
+            Folder parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new FolderNotFoundException(UUID.fromString(parentFolderRaw)));
+            if (!userName.equals(parentFolder.getOwnerName())) {
+                throw new IllegalArgumentException("Trying to access someone else's folder");
+            }
+        }
+
+        EntrySpecification spec2 = new EntrySpecification(new SearchCriteria("folderId", ":", parentFolderId));
+
+
+        List<EntryLoginPassword> results = entryLoginPasswordRepository.findAll(Specification.where(spec1).and(spec2));
         ObjectMapper objectMapper = new ObjectMapper();
         StringBuilder allEntries = new StringBuilder("[");
         for (EntryLoginPassword temp : results) {
+            allEntries.append(temp.toString());
+            allEntries.append(",");
+        }
+        allEntries.deleteCharAt(allEntries.length() - 1);
+        allEntries.append("]");
+        return ResponseEntity.ok().body(allEntries.toString());
+    }
+
+    @Override
+    public ResponseEntity<String> getAllFolders(String authHeader, String parentFolderRaw) {
+        String jwt = jwtService.getTokenFromHeader(authHeader);
+        String jwtType = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.TYPE);
+        if (jwtType.equals("DISPOSABLE")) {
+            throw new IllegalArgumentException("Cannot use getDisposableJWT with disposable jwt");
+        }
+        else if (!jwtType.equals("CONSTANT")) {
+            throw new IllegalArgumentException("Invalid jwt type");
+        }
+        final String userName = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.NAME);
+        userService.userDetailsService().loadUserByUsername(userName); /* checking that userName is in repository,
+         * otherwise it will throw an exception
+         */
+
+        FolderSpecification spec1 = new FolderSpecification(new SearchCriteria("ownerName", ":", userName));
+
+        UUID parentFolderId = null;
+        if (!(parentFolderRaw == null || parentFolderRaw.length() == 0)) {
+            parentFolderId = UUID.fromString(parentFolderRaw);
+            Folder parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new FolderNotFoundException(UUID.fromString(parentFolderRaw)));
+            if (!userName.equals(parentFolder.getOwnerName())) {
+                throw new IllegalArgumentException("Trying to access someone else's folder");
+            }
+        }
+
+        FolderSpecification spec2 = new FolderSpecification(new SearchCriteria("folderId", ":", parentFolderId));
+
+
+        List<Folder> results = folderRepository.findAll(Specification.where(spec1).and(spec2));
+        ObjectMapper objectMapper = new ObjectMapper();
+        StringBuilder allEntries = new StringBuilder("[");
+        for (Folder temp : results) {
             allEntries.append(temp.toString());
             allEntries.append(",");
         }
