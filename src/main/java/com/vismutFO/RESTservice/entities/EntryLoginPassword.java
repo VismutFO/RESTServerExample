@@ -1,8 +1,7 @@
-package com.vismutFO.RESTservice;
-
-
+package com.vismutFO.RESTservice.entities;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.vismutFO.RESTservice.CustomAuthorityDeserializer;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -22,7 +21,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
-public class Person implements UserDetails {
+public class EntryLoginPassword implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
@@ -32,7 +31,7 @@ public class Person implements UserDetails {
     @NotNull(message = "Password is mandatory")
     private String password;
     private String url;
-    public Person (String name, String login, String password, String url) {
+    public EntryLoginPassword(String name, String login, String password, String url) {
         this.name = name;
         this.login = login;
         this.password = password;
@@ -115,7 +114,7 @@ public class Person implements UserDetails {
 
         if (this == o)
             return true;
-        if (!(o instanceof Person person))
+        if (!(o instanceof EntryLoginPassword person))
             return false;
         return Objects.equals(this.id, person.id) && Objects.equals(this.name, person.name)
                 && Objects.equals(this.login, person.login) && Objects.equals(this.password, person.password)

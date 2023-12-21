@@ -1,4 +1,4 @@
-package com.vismutFO.RESTservice;
+package com.vismutFO.RESTservice.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -30,3 +30,4 @@ public class DisposableJWT {
     }
 
 }
+

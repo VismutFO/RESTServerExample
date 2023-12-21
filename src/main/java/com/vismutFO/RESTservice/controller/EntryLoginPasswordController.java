@@ -1,8 +1,11 @@
 package com.vismutFO.RESTservice.controller;
 
 import com.vismutFO.RESTservice.*;
+import com.vismutFO.RESTservice.entities.DisposableJWT;
+import com.vismutFO.RESTservice.entities.EntryLoginPassword;
+import com.vismutFO.RESTservice.repositories.EntryLoginPasswordRepository;
+import com.vismutFO.RESTservice.repositories.JWTRepository;
 import com.vismutFO.RESTservice.services.JwtService;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -21,9 +24,9 @@ import java.util.UUID;
 @RequestMapping("/api/v1/persons")
 @RestController
 @RequiredArgsConstructor
-public class PersonController {
+public class EntryLoginPasswordController {
 
-    private final PersonRepository repository;
+    private final EntryLoginPasswordRepository repository;
 
     private final JWTRepository jwtRepository;
 
@@ -36,7 +39,7 @@ public class PersonController {
     private Timer.Sample timer;
 
     @PostMapping(value = "/updatePerson")
-    public ResponseEntity<String> updatePerson(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestBody Person newPerson) {
+    public ResponseEntity<String> updatePerson(@Valid @RequestHeader("Authorization") String authHeader, @Valid @RequestBody EntryLoginPassword newPerson) {
         String jwtType = jwtService.extractClaimFromHeader(authHeader, "type");
         if (jwtType.equals("DISPOSABLE")) {
             throw new IllegalArgumentException("Cannot use updatePerson with disposable jwt");
@@ -53,7 +56,7 @@ public class PersonController {
                     person.setUrl(newPerson.getUrl());
                     return repository.save(person);
                 })
-                .orElseThrow(() -> new PersonNotFoundException(userName)).toStringFull());
+                .orElseThrow(() -> new EntryLoginPasswordNotFoundException(userName)).toStringFull());
     }
 
     @GetMapping(value = "/shareProfile")
@@ -66,10 +69,10 @@ public class PersonController {
             throw new IllegalArgumentException("Invalid jwt type");
         }
         String userName = jwtService.extractClaimFromHeader(authHeader, "name");
-        Optional<Person> user = repository.findByName(userName);
+        Optional<EntryLoginPassword> user = repository.findByName(userName);
         UserDetails userDetails;
         if (user.isEmpty()) {
-            throw new PersonNotFoundException(userName);
+            throw new EntryLoginPasswordNotFoundException(userName);
         }
         else {
             userDetails = user.get();
@@ -97,7 +100,7 @@ public class PersonController {
             throw new IllegalArgumentException("Invalid jwt type");
         }
         String userName = jwtService.extractClaimFromHeader(authHeader, "name");
-        return ResponseEntity.ok().body(repository.findByName(userName).orElseThrow(() -> new PersonNotFoundException(userName)).toStringFull());
+        return ResponseEntity.ok().body(repository.findByName(userName).orElseThrow(() -> new EntryLoginPasswordNotFoundException(userName)).toStringFull());
     }
 
     @GetMapping(value = "/getProfileByDisposable")
@@ -126,7 +129,7 @@ public class PersonController {
                 .description("books searching timer")
                 .tag("title", "timeForUse")
                 .register(meterRegistry));
-        return ResponseEntity.ok().body(repository.findByName(userName).orElseThrow(() -> new PersonNotFoundException(userName)).toStringFull());
+        return ResponseEntity.ok().body(repository.findByName(userName).orElseThrow(() -> new EntryLoginPasswordNotFoundException(userName)).toStringFull());
     }
 }
 

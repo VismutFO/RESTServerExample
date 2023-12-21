@@ -15,9 +15,9 @@ import java.util.Map;
 class ExceptionController {
 
     @ResponseBody
-    @ExceptionHandler(PersonNotFoundException.class)
+    @ExceptionHandler(EntryLoginPasswordNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    String employeeNotFoundHandler(PersonNotFoundException ex) {
+    String employeeNotFoundHandler(EntryLoginPasswordNotFoundException ex) {
         return ex.getMessage();
     }
 

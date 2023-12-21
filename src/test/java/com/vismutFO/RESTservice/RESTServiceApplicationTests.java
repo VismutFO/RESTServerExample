@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.vismutFO.RESTservice.dao.request.SignInRequest;
 import com.vismutFO.RESTservice.dao.request.SignUpRequest;
 import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
+import com.vismutFO.RESTservice.entities.EntryLoginPassword;
+import com.vismutFO.RESTservice.repositories.EntryLoginPasswordRepository;
+import com.vismutFO.RESTservice.repositories.JWTRepository;
 import com.vismutFO.RESTservice.services.JwtService;
 import org.aspectj.lang.annotation.After;
 import org.junit.jupiter.api.Test;
@@ -31,10 +34,10 @@ class RESTServiceApplicationTests {
 	private TestRestTemplate restTemplate;
 
 	@Autowired
-	private PersonRepository collection;
+	private EntryLoginPasswordRepository collection;
 
 	@Autowired
-	private  JWTRepository jwtRepository;
+	private JWTRepository jwtRepository;
 
 	@Autowired
 	private JwtService jwtService;
@@ -75,13 +78,13 @@ class RESTServiceApplicationTests {
 		ResponseEntity<JwtAuthenticationResponse> signUpResponse = restTemplate.postForEntity("/api/v1/auth/signUp", request, JwtAuthenticationResponse.class);
 		assertThat(signUpResponse.getStatusCode(), is(HttpStatus.CREATED));
 
-		Person person = new Person("Jack", "login", "password", "/");
+		EntryLoginPassword person = new EntryLoginPassword("Jack", "login", "password", "/");
 		String jwt = Objects.requireNonNull(signUpResponse.getBody()).getToken();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("Authorization", "Bearer " + jwt);
 
-		HttpEntity<Person> entity = new HttpEntity<>(person, headers);
+		HttpEntity<EntryLoginPassword> entity = new HttpEntity<>(person, headers);
 
 		ResponseEntity<String> updateResponse = restTemplate.postForEntity("/api/v1/persons/updatePerson", entity, String.class);
 		assertThat(updateResponse.getStatusCode(), is(HttpStatus.OK));
