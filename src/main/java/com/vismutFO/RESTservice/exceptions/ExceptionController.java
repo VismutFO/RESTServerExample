@@ -1,4 +1,4 @@
-package com.vismutFO.RESTservice;
+package com.vismutFO.RESTservice.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
@@ -17,7 +17,7 @@ class ExceptionController {
     @ResponseBody
     @ExceptionHandler(EntryLoginPasswordNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    String employeeNotFoundHandler(EntryLoginPasswordNotFoundException ex) {
+    String entryNotFoundHandler(EntryLoginPasswordNotFoundException ex) {
         return ex.getMessage();
     }
 

@@ -2,14 +2,10 @@ package com.vismutFO.RESTservice.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.UUID;
 
-@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,6 +13,7 @@ import java.util.UUID;
 @Table(name = "one_time_jwt")
 public class DisposableJWT {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     @NotNull(message = "jwt is mandatory")
     private String jwt;

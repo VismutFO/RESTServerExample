@@ -1,7 +1,7 @@
 package com.vismutFO.RESTservice.services.impl;
 
-import com.vismutFO.RESTservice.entities.EntryLoginPassword;
-import com.vismutFO.RESTservice.repositories.EntryLoginPasswordRepository;
+import com.vismutFO.RESTservice.entities.User;
+import com.vismutFO.RESTservice.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,14 +14,10 @@ import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
 import com.vismutFO.RESTservice.services.AuthenticationService;
 import com.vismutFO.RESTservice.services.JwtService;
 
-import java.util.Date;
-import java.util.UUID;
-
-
 @Service
 @RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
-    private final EntryLoginPasswordRepository personRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -31,10 +27,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (request == null) {
             throw new IllegalArgumentException("Empty request");
         }
-        EntryLoginPassword person = EntryLoginPassword.builder().name(request.getName()).login(request.getLogin())
-                .url(request.getUrl()).password(passwordEncoder.encode(request.getPassword())).build();
-        personRepository.save(person);
-        String jwt = jwtService.generateToken(person, "CONSTANT", UUID.randomUUID(), new Date(System.currentTimeMillis() + 1000 * 60 * 24));
+        if (userRepository.findByUserName(request.getUserName()).isPresent()) {
+            throw new IllegalArgumentException("Already have user with this name");
+        }
+        User user = User.builder().userName(request.getUserName()).userPassword(passwordEncoder.encode(request.getUserPassword())).build();
+        userRepository.save(user);
+        String jwt = jwtService.generateConstantToken(user);
         return new JwtAuthenticationResponse(jwt);
     }
 
@@ -42,14 +40,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public JwtAuthenticationResponse signIn(SignInRequest request) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getName(), request.getPassword()));
+                    new UsernamePasswordAuthenticationToken(request.getUserName(), request.getUserPassword()));
         } catch (Exception e) {
             System.out.println(e);
             return null;
         }
-        EntryLoginPassword person = personRepository.findByName(request.getName())
+        User user = userRepository.findByUserName(request.getUserName())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
-        String jwt = jwtService.generateToken(person, "CONSTANT", UUID.randomUUID(), new Date(System.currentTimeMillis() + 1000 * 60 * 24));
+        String jwt = jwtService.generateConstantToken(user);
         return new JwtAuthenticationResponse(jwt);
     }
 }

@@ -20,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
+@Table(name = "entries")
 public class EntryLoginPassword implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -31,6 +31,8 @@ public class EntryLoginPassword implements UserDetails {
     @NotNull(message = "Password is mandatory")
     private String password;
     private String url;
+    @NotNull(message = "ownerName is mandatory")
+    private String ownerName;
     public EntryLoginPassword(String name, String login, String password, String url) {
         this.name = name;
         this.login = login;
@@ -55,11 +57,15 @@ public class EntryLoginPassword implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("user"));
     }
-
     public String getPassword() {
         return password;
     }
-
+    public String getUrl() {
+        return url;
+    }
+    public String getOwnerName() {
+        return ownerName;
+    }
     @Override
     public String getUsername() {
         return name;
@@ -84,11 +90,6 @@ public class EntryLoginPassword implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
-
-    public String getUrl() {
-        return url;
-    }
-
     public void setId(UUID id) {
         this.id = id;
     }
@@ -132,7 +133,7 @@ public class EntryLoginPassword implements UserDetails {
     }
 
     public String toStringFull() {
-        return "{\"id\": \"" +id + "\", \"name\": \"" + name + "\", \"login\" : \"" + login + "\"," +
-                " \"password\": \"" + password + "\", \"url\": \"" + url + "\"}";
+        return "{\"id\": \"" + id + "\", \"name\": \"" + name + "\", \"login\" : \"" + login + "\"," +
+                " \"password\": \"" + password + "\", \"url\": \"" + url + "\"," + " \"ownerName\": \"" + ownerName + "\"}";
     }
 }

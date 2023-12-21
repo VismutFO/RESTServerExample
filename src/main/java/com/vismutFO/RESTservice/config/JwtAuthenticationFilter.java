@@ -2,6 +2,7 @@ package com.vismutFO.RESTservice.config;
 
 import java.io.IOException;
 
+import com.vismutFO.RESTservice.JWTUsedClaims;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.lang3.StringUtils;
@@ -39,15 +40,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userName;
-        if (StringUtils.isEmpty(authHeader) || !StringUtils.startsWith(authHeader, "Bearer ")) {
+
+        try {
+            jwt = jwtService.getTokenFromHeader(authHeader);
+            userName = jwtService.extractClaimFromToken(jwt, JWTUsedClaims.NAME);
+        } catch (IllegalArgumentException e) {
             filterChain.doFilter(request, response);
             return;
-        }
-        jwt = authHeader.substring(7);
-        try {
-            userName = jwtService.extractUserName(jwt);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            System.out.println("!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!!");
             Counter timeExpiredCounter = Counter.builder("timeExpiredAttempts")
                 .tag("title", "timeExpiredAttempts")
                 .description("a number of attempts go to someone else's profile with expired jwt")
@@ -68,23 +68,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.setContext(context);
             }
         }
-        try {
-            filterChain.doFilter(request, response);
-        }
-        catch (io.jsonwebtoken.ExpiredJwtException e) {
-            if (jwtService.extractClaimFromHeader(authHeader, "type").equals("DISPOSABLE")) {
-                System.out.println("!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!!");
-                Counter timeExpiredCounter = Counter.builder("timeExpiredAttempts")
-                        .tag("title", "timeExpiredAttempts")
-                        .description("a number of attempts go to someone else's profile with expired jwt")
-                        .register(meterRegistry);
-                timeExpiredCounter.increment();
-            }
-            throw e;
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+        filterChain.doFilter(request, response);
     }
 }
