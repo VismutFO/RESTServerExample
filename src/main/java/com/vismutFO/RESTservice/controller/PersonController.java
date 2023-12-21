@@ -110,18 +110,7 @@ public class PersonController {
         else if (!jwtType.equals("DISPOSABLE")) {
             throw new IllegalArgumentException("Invalid jwt type");
         }
-        String userName;
-        try {
-            userName = jwtService.extractClaimFromHeader(authHeader, "name");
-        } catch (ExpiredJwtException e) {
-            System.out.println("Caught jwt exception");
-            Counter timeExpiredCounter = Counter.builder("timeExpiredAttempts")
-                    .tag("title", "timeExpiredAttempts")
-                    .description("a number of attempts go to someone else's profile with expired jwt")
-                    .register(meterRegistry);
-            timeExpiredCounter.increment();
-            throw e;
-        }
+        String userName = jwtService.extractClaimFromHeader(authHeader, "name");
         String jwt = authHeader.substring(7);
         Optional<DisposableJWT> jwtInRep = jwtRepository.findByJwt(jwt);
         if (jwtInRep.isEmpty()) {
