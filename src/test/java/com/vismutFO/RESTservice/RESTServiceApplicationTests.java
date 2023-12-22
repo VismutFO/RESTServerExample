@@ -6,7 +6,6 @@ import com.vismutFO.RESTservice.dao.request.SignInRequest;
 import com.vismutFO.RESTservice.dao.request.SignUpRequest;
 import com.vismutFO.RESTservice.dao.response.JwtAuthenticationResponse;
 import com.vismutFO.RESTservice.repositories.EntryLoginPasswordRepository;
-import com.vismutFO.RESTservice.repositories.JWTRepository;
 import com.vismutFO.RESTservice.services.JwtService;
 import org.aspectj.lang.annotation.After;
 import org.junit.jupiter.api.Test;

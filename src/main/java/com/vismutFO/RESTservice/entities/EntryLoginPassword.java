@@ -143,6 +143,7 @@ public class EntryLoginPassword implements UserDetails {
 
     public String toStringFull() {
         return "{\"id\": \"" + id + "\", \"name\": \"" + name + "\", \"login\" : \"" + login + "\"," +
-                " \"password\": \"" + password + "\", \"url\": \"" + url + "\"," + " \"ownerName\": \"" + ownerName + "\"}";
+                " \"password\": \"" + password + "\", \"url\": \"" + url + "\"," + " \"ownerName\": \"" + ownerName + "\"," +
+                " \"folderId\": \"" + folderId + "\"}";
     }
 }

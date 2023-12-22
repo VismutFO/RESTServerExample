@@ -9,8 +9,6 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @RequestMapping("/api/v1/persons")
 @RestController
 @RequiredArgsConstructor
@@ -20,20 +18,20 @@ public class EntryLoginPasswordController {
 
     @PostMapping(value = "/addFolder")
     public ResponseEntity<String> addFolder(@Valid @RequestHeader("Authorization") String authHeader,
-                                            @RequestHeader("ParentFolder") String parentFolder) {
+                                            @RequestHeader(value = "ParentFolder", required = false) String parentFolder) {
         return entryLoginPasswordService.addFolder(authHeader, parentFolder);
     }
 
     @PostMapping(value = "/addEntry")
     public ResponseEntity<String> addEntry(@Valid @RequestHeader("Authorization") String authHeader,
-                                           @RequestHeader("ParentFolder") String parentFolder, @Valid @RequestBody EntryRequest newEntry) {
+                                           @RequestHeader(value = "ParentFolder", required = false) String parentFolder, @Valid @RequestBody EntryRequest newEntry) {
         return entryLoginPasswordService.addEntry(authHeader, parentFolder, newEntry);
     }
 
     @PostMapping(value = "/updateEntry")
     public ResponseEntity<String> updateEntry(@Valid @RequestHeader("Authorization") String authHeader,
                                               @Valid @RequestHeader("EntryId") String entryIdRaw,
-                                              @RequestHeader("ParentFolder") String parentFolder,
+                                              @RequestHeader(value = "ParentFolder", required = false) String parentFolder,
                                               @Valid @RequestBody EntryRequest newEntry) {
         return entryLoginPasswordService.updateEntry(authHeader, entryIdRaw, parentFolder, newEntry);
     }
@@ -46,13 +44,13 @@ public class EntryLoginPasswordController {
 
     @GetMapping(value = "/getAllEntries")
     public ResponseEntity<String> getAllEntries(@Valid @RequestHeader("Authorization") String authHeader,
-                                                @RequestHeader("ParentFolder") String parentFolder) {
+                                                @RequestHeader(value = "ParentFolder", required = false) String parentFolder) {
         return entryLoginPasswordService.getAllEntries(authHeader, parentFolder);
     }
 
     @GetMapping(value = "/getAllFolders")
     public ResponseEntity<String> getAllFolders(@Valid @RequestHeader("Authorization") String authHeader,
-                                                @RequestHeader("ParentFolder") String parentFolder) {
+                                                @RequestHeader(value = "ParentFolder", required = false) String parentFolder) {
         return entryLoginPasswordService.getAllFolders(authHeader, parentFolder);
     }
 

@@ -26,6 +26,9 @@ public class EntrySpecification implements Specification<EntryLoginPassword> {
                     root.<String> get(criteria.getKey()), criteria.getValue().toString());
         }
         else if (criteria.getOperation().equalsIgnoreCase(":")) {
+            if (criteria.getValue() == null) {
+                return builder.isNull(root.get(criteria.getKey()));
+            }
             if (root.get(criteria.getKey()).getJavaType() == String.class) {
                 return builder.like(
                         root.<String>get(criteria.getKey()), "%" + criteria.getValue() + "%");

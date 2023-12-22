@@ -221,11 +221,14 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
                 throw new IllegalArgumentException("Trying to access someone else's folder");
             }
         }
-
         EntrySpecification spec2 = new EntrySpecification(new SearchCriteria("folderId", ":", parentFolderId));
 
 
         List<EntryLoginPassword> results = entryLoginPasswordRepository.findAll(Specification.where(spec1).and(spec2));
+        if (results.isEmpty()) {
+            return ResponseEntity.ok().body("");
+        }
+
         ObjectMapper objectMapper = new ObjectMapper();
         StringBuilder allEntries = new StringBuilder("[");
         for (EntryLoginPassword temp : results) {
@@ -267,6 +270,9 @@ public class EntryLoginPasswordServiceImpl implements EntryLoginPasswordService 
 
 
         List<Folder> results = folderRepository.findAll(Specification.where(spec1).and(spec2));
+        if (results.isEmpty()) {
+            return ResponseEntity.ok().body("");
+        }
         ObjectMapper objectMapper = new ObjectMapper();
         StringBuilder allEntries = new StringBuilder("[");
         for (Folder temp : results) {
